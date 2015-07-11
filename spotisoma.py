@@ -13,6 +13,7 @@ IMPORTIO_API_KEY = os.environ.get('IMPORTIO_API_KEY')
 SPOTIFY_USERNAME = os.environ.get('SPOTIFY_USERNAME')
 SPOTIFY_PASSWORD = os.environ.get('SPOTIFY_PASSWORD')
 SPOTIFY_PLAYLIST_NAME = 'SomaFM - Indie Pop Rock'
+SPOTIFY_PLAYLIST_MAXLENGTH = 300
 
 session = spotify.Session()
 logged_in_event = threading.Event()
@@ -89,3 +90,9 @@ if __name__ == "__main__":
             if not is_song_in_playlist(song, playlist):
                 print 'Adding track: {0} - {1}'.format(song.artists, song.name)
                 playlist.add_tracks(song, 0)
+
+    # Removes old tracks if the playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
+    if len(playlist.tracks > SPOTIFY_PLAYLIST_MAXLENGTH):
+        indexes_to_remove = [x for x in range(SPOTIFY_PLAYLIST_MAXLENGTH,
+            len(playlist.tracks))]
+        playlist.remove_tracks(indexes_to_remove)
