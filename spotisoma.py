@@ -88,11 +88,11 @@ if __name__ == "__main__":
 
             # Add song to the playlist if it's not already there
             if not is_song_in_playlist(song, playlist):
-                print 'Adding track: {0} - {1}'.format(song.artists, song.name)
+                print 'Adding track: {0}'.format(song.name.encode("utf8"))
                 playlist.add_tracks(song, 0)
 
     # Removes old tracks if the playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
-    if len(playlist.tracks > SPOTIFY_PLAYLIST_MAXLENGTH):
+    if len(playlist.tracks) > SPOTIFY_PLAYLIST_MAXLENGTH:
         indexes_to_remove = [x for x in range(SPOTIFY_PLAYLIST_MAXLENGTH,
             len(playlist.tracks))]
         playlist.remove_tracks(indexes_to_remove)
