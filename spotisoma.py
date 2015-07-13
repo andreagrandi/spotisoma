@@ -3,6 +3,7 @@ import requests
 import urllib
 import spotify
 import threading
+import logging
 
 
 IMPORTIO_API_INDIEPOP_URL = ('https://api.import.io/store/data/'
@@ -15,6 +16,17 @@ SPOTIFY_PASSWORD = os.environ.get('SPOTIFY_PASSWORD')
 SPOTIFY_PLAYLIST_NAME = 'SomaFM - Indie Pop Rock'
 SPOTIFY_PLAYLIST_MAXLENGTH = 300
 
+# Setup logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler('spotisoma.log')
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Setup Spotify Session
 session = spotify.Session()
 logged_in_event = threading.Event()
 
@@ -38,6 +50,7 @@ def get_songs_history():
         IMPORTIO_API_INDIEPOP_URL, IMPORTIO_API_KEY))
 
     if response.ok:
+        logger.info('Received songs history from SomaFM')
         results = response.json()['results']
         return [(s['song_value'], s['artist_link/_text']) for s in results]
 
@@ -49,8 +62,10 @@ def get_or_create_spotify_playlist(name):
         pl.load()
 
         if pl.name == name:
+            logger.info('Found playlist')
             return pl
 
+    logger.info('Created new playlist')
     return container.add_new_playlist(name)
 
 def search_song(title, artist):
@@ -58,13 +73,16 @@ def search_song(title, artist):
     search.load()
 
     if len(search.tracks) > 0:
+        logger.info('Found track {0} - {1}'.format(title, artist))
         return search.tracks[0]
     else:
+        logger.warning('Track not found: {0} - {1}'.format(title, artist))
         return None
 
 def is_song_in_playlist(song, playlist):
     for track in playlist.tracks:
         if song == track:
+            logger.debug('Track already in playlist: {0}'.format(song.name))
             return True
     return False
 
@@ -80,7 +98,7 @@ if __name__ == "__main__":
 
     # Search each song in Spotify catalog
     for s in songs_history:
-        print 'Searching song: {0}'.format(s)
+        logger.info('Searching song: {0}'.format(s))
         song = search_song(s[0], s[1])
 
         if song:
@@ -88,11 +106,18 @@ if __name__ == "__main__":
 
             # Add song to the playlist if it's not already there
             if not is_song_in_playlist(song, playlist):
-                print 'Adding track: {0}'.format(song.name.encode("utf8"))
+                logger.info('Adding track: {0}'.format(song.name.encode("utf8")))
                 playlist.add_tracks(song, 0)
 
     # Removes old tracks if the playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
     if len(playlist.tracks) > SPOTIFY_PLAYLIST_MAXLENGTH:
+        logger.info('Removing older tracks from the playlist')
         indexes_to_remove = [x for x in range(SPOTIFY_PLAYLIST_MAXLENGTH,
             len(playlist.tracks))]
-        playlist.remove_tracks(indexes_to_remove)
+        try:
+            original_playlist_length = len(playlist.tracks)
+            playlist.remove_tracks(indexes_to_remove)
+            logger.info('Removed last {0} tracks'.format(
+                original_playlist_length - SPOTIFY_PLAYLIST_MAXLENGTH))
+        except e:
+            logger.error('Error occurred while removing tracks: {0}'.format(e))
