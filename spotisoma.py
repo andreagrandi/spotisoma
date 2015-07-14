@@ -22,7 +22,7 @@ logger.setLevel(logging.INFO)
 handler = logging.FileHandler('spotisoma.log')
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    '%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -115,9 +115,8 @@ if __name__ == "__main__":
         indexes_to_remove = [x for x in range(SPOTIFY_PLAYLIST_MAXLENGTH,
             len(playlist.tracks))]
         try:
-            original_playlist_length = len(playlist.tracks)
             playlist.remove_tracks(indexes_to_remove)
             logger.info('Removed last {0} tracks'.format(
-                original_playlist_length - SPOTIFY_PLAYLIST_MAXLENGTH))
-        except e:
+                len(indexes_to_remove)))
+        except Error as e:
             logger.error('Error occurred while removing tracks: {0}'.format(e))
