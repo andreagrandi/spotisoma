@@ -4,9 +4,11 @@ import urllib
 import spotify
 import threading
 import logging
+from time import sleep
 
 
-IMPORTIO_API_INDIEPOP_URL = ('https://api.import.io/store/data/'
+IMPORTIO_API_INDIEPOP_URL = (
+    'https://api.import.io/store/data/'
     'c3914ba4-3da3-4fee-8120-fcb6bfb66d3f/_query?input/webpage/'
     'url=http%3A%2F%2Fsomafm.com%2Findiepop%2Fsonghistory.html'
     '&_user=cc187fb6-b6e3-4d38-8b82-3e67399bafbc&_apikey=')
@@ -35,15 +37,18 @@ def connection_state_listener(session):
     if session.connection.state is spotify.ConnectionState.LOGGED_IN:
         logged_in_event.set()
 
+
 def login_to_spotify():
     loop = spotify.EventLoop(session)
     loop.start()
 
-    session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED,
+    session.on(
+        spotify.SessionEvent.CONNECTION_STATE_UPDATED,
         connection_state_listener)
 
     session.login(SPOTIFY_USERNAME, SPOTIFY_PASSWORD)
     logged_in_event.wait()
+
 
 def get_songs_history():
     response = requests.get('{0}{1}'.format(
@@ -54,6 +59,7 @@ def get_songs_history():
         results = response.json()['results']
         return [(s['song_value'], s['artist_link/_text']) for s in results]
 
+
 def get_or_create_spotify_playlist(name):
     container = session.playlist_container
     container.load()
@@ -61,12 +67,16 @@ def get_or_create_spotify_playlist(name):
     for pl in container:
         pl.load()
 
+        # Sleep for 1 second to give time to the playlist to be loaded
+        sleep(1)
+
         if pl.name == name:
             logger.info('Found playlist')
             return pl
 
     logger.info('Created new playlist')
     return container.add_new_playlist(name)
+
 
 def search_song(title, artist):
     search = session.search('{0} {1}'.format(title, artist))
@@ -78,6 +88,7 @@ def search_song(title, artist):
     else:
         logger.warning('Track not found: {0} - {1}'.format(title, artist))
         return None
+
 
 def is_song_in_playlist(song, playlist):
     for track in playlist.tracks:
@@ -106,14 +117,17 @@ if __name__ == "__main__":
 
             # Add song to the playlist if it's not already there
             if not is_song_in_playlist(song, playlist):
-                logger.info('Adding track: {0}'.format(song.name.encode("utf8")))
+                logger.info(
+                    'Adding track: {0}'.format(song.name.encode("utf8")))
                 playlist.add_tracks(song, 0)
 
     # Removes old tracks if the playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
     if len(playlist.tracks) > SPOTIFY_PLAYLIST_MAXLENGTH:
         logger.info('Removing older tracks from the playlist')
-        indexes_to_remove = [x for x in range(SPOTIFY_PLAYLIST_MAXLENGTH,
-            len(playlist.tracks))]
+        indexes_to_remove = [
+            x for x in range(
+                SPOTIFY_PLAYLIST_MAXLENGTH,
+                len(playlist.tracks))]
         try:
             playlist.remove_tracks(indexes_to_remove)
             logger.info('Removed last {0} tracks'.format(
