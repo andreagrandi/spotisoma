@@ -64,11 +64,11 @@ def get_or_create_spotify_playlist(name):
     container = session.playlist_container
     container.load()
 
+    # Sleep for 1 second to give time to the playlist to be loaded
+    sleep(1)
+
     for pl in container:
         pl.load()
-
-        # Sleep for 1 second to give time to the playlist to be loaded
-        sleep(1)
 
         if pl.name == name:
             logger.info('Found playlist')
