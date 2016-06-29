@@ -64,8 +64,11 @@ def get_or_create_spotify_playlist(name):
     container = session.playlist_container
     container.load()
 
-    # Sleep for 1 second to give time to the playlist to be loaded
-    sleep(1)
+    # Sleep for 2 seconds to give time to the playlist to be loaded
+    sleep(2)
+
+    if len(container) <= 0:
+        return None
 
     for pl in container:
         pl.load()
@@ -107,30 +110,33 @@ if __name__ == "__main__":
     # Get or create the Spotify playlist for SomaFM:
     playlist = get_or_create_spotify_playlist(SPOTIFY_PLAYLIST_NAME)
 
-    # Search each song in Spotify catalog
-    for s in songs_history:
-        logger.info('Searching song: {0}'.format(s))
-        song = search_song(s[0], s[1])
+    if playlist:
+        # Search each song in Spotify catalog
+        for s in songs_history:
+            logger.info('Searching song: {0}'.format(s))
+            song = search_song(s[0], s[1])
 
-        if song:
-            song.load()
+            if song:
+                song.load()
 
-            # Add song to the playlist if it's not already there
-            if not is_song_in_playlist(song, playlist):
-                logger.info(
-                    'Adding track: {0}'.format(song.name.encode("utf8")))
-                playlist.add_tracks(song, 0)
+                # Add song to the playlist if it's not already there
+                if not is_song_in_playlist(song, playlist):
+                    logger.info(
+                        'Adding track: {0}'.format(song.name.encode("utf8")))
+                    playlist.add_tracks(song, 0)
 
-    # Removes old tracks if the playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
-    if len(playlist.tracks) > SPOTIFY_PLAYLIST_MAXLENGTH:
-        logger.info('Removing older tracks from the playlist')
-        indexes_to_remove = [
-            x for x in range(
-                SPOTIFY_PLAYLIST_MAXLENGTH,
-                len(playlist.tracks))]
-        try:
-            playlist.remove_tracks(indexes_to_remove)
-            logger.info('Removed last {0} tracks'.format(
-                len(indexes_to_remove)))
-        except Error as e:
-            logger.error('Error occurred while removing tracks: {0}'.format(e))
+        # Removes old tracks if the
+        # playlist length is > SPOTIFY_PLAYLIST_MAXLENGTH
+        if len(playlist.tracks) > SPOTIFY_PLAYLIST_MAXLENGTH:
+            logger.info('Removing older tracks from the playlist')
+            indexes_to_remove = [
+                x for x in range(
+                    SPOTIFY_PLAYLIST_MAXLENGTH,
+                    len(playlist.tracks))]
+            try:
+                playlist.remove_tracks(indexes_to_remove)
+                logger.info('Removed last {0} tracks'.format(
+                    len(indexes_to_remove)))
+            except Error as e:
+                logger.error(
+                    'Error occurred while removing tracks: {0}'.format(e))
